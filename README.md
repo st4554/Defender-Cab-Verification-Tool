@@ -1,4 +1,4 @@
-# Defender Cab Verification Tool v3.0.29640.0
+# Defender Cab Verification Tool v3.0.29644.0
 
 A small Windows desktop utility that verifies the digital signatures of files contained inside Microsoft Defender CAB packages (files named like `defender-dism-*.cab`). The tool expands CAB archives, walks through the extracted files, and uses native WinTrust checks to report whether each file is signed and whether its signature is valid.
 
@@ -36,6 +36,11 @@ Use the appropriate exe files for the target architecture.
 
 The application removes extracted files (the `defender-dism` folder) on exit and writes a `cleanup-YYYYMMDD-HHMMSS.log` file into the `logs` folder describing actions taken.
 
-## License
+Bug Fixes for x86 and x64
+1. Fixed an issue with launching as a non-admin, was leading to no defender cabs being extracted and verified.
+2. Fixed an issue with both x64 and x86 not launching on Windows 10 v21H2 or above, had the wrong OS detection parameters.
+
+Bug Fixes for arm64
+1. Fixed an issue with launching as a non-admin, was leading to no defender cabs being extracted and verified.
 
 See the `LICENSE` file in the repository for license details.
