@@ -1,4 +1,4 @@
-# Defender Cab Verification Tool
+# Defender Cab Verification Tool v3.0.29667.0
 
 A small Windows desktop utility that verifies the digital signatures of files contained inside Microsoft Defender CAB packages (files named like `defender-dism-*.cab`). The tool expands CAB archives, walks through the extracted files, and uses native WinTrust checks to report whether each file is signed and whether its signature is valid.
 
