@@ -227,7 +227,7 @@ namespace Defender_Cab_Verification_Tool
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Defender CAB Verification Tool v3.0.29640.0";
+            this.Text = "Defender CAB Verification Tool v3.0.29667.0 x64";
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
             this.menuStrip.ResumeLayout(false);

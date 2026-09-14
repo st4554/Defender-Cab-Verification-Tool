@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -9,6 +10,7 @@ namespace Defender_Cab_Verification_Tool
 {
     public partial class MainForm : Form
     {
+        private const int MinSupportedBuild = 19044; // Windows 10 v21H2 build
         private CancellationTokenSource _cts;
         private volatile bool _isCleaning;
         private volatile bool _allowClose;
@@ -16,6 +18,78 @@ namespace Defender_Cab_Verification_Tool
         public MainForm()
         {
             InitializeComponent();
+        }
+
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            try
+            {
+                var build = GetWindowsBuildNumber();
+                if (build < MinSupportedBuild)
+                {
+                    var msg =
+                        $"Defender Cab Verification Tool requires x86 version of Windows 10 version 21H2 (build {MinSupportedBuild}) or later.\r\n" +
+                        $"Detected OS build: {build}. The application will now exit.";
+                    MessageBox.Show(this, msg, "Unsupported OS", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    Close();
+                    return;
+                }
+            }
+            catch
+            {
+                // If detection fails, be conservative and allow startup,
+                // or optionally show a warning. Here we allow startup.
+            }
+        }
+
+        // P/Invoke to get accurate Windows version/build (avoids manifest-dependent Environment.OSVersion issues)
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct OSVERSIONINFOEX
+        {
+            public int dwOSVersionInfoSize;
+            public int dwMajorVersion;
+            public int dwMinorVersion;
+            public int dwBuildNumber;
+            public int dwPlatformId;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
+            public string szCSDVersion;
+            public ushort wServicePackMajor;
+            public ushort wServicePackMinor;
+            public ushort wSuiteMask;
+            public byte wProductType;
+            public byte wReserved;
+        }
+
+        [DllImport("ntdll.dll", SetLastError = true)]
+        private static extern int RtlGetVersion(ref OSVERSIONINFOEX versionInfo);
+
+        private static int GetWindowsBuildNumber()
+        {
+            try
+            {
+                var os = new OSVERSIONINFOEX();
+                os.dwOSVersionInfoSize = Marshal.SizeOf(typeof(OSVERSIONINFOEX));
+                if (RtlGetVersion(ref os) == 0)
+                {
+                    return os.dwBuildNumber;
+                }
+            }
+            catch
+            {
+                // fall through to fallback
+            }
+
+            // Fallback (may be unreliable without proper app manifest)
+            try
+            {
+                return Environment.OSVersion.Version.Build;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         private void BtnVerify_Click(object sender, EventArgs e)

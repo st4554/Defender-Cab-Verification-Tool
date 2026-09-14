@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Defender_Cab_Verification_Tool
 {
@@ -120,59 +121,70 @@ namespace Defender_Cab_Verification_Tool
             int processed = 0;
             progress?.Report(0);
 
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1),
+                CancellationToken = cancellationToken
+            };
+
             WriteLog($"Files to verify: {total}");
 
-            foreach (var file in filtered)
+            try
             {
-                if (cancellationToken.IsCancellationRequested)
+                Parallel.ForEach(filtered, parallelOptions, file =>
                 {
-                    WriteLog("Operation cancelled by user.");
-                    break;
-                }
+                    if (parallelOptions.CancellationToken.IsCancellationRequested) return;
 
-                try
-                {
-                    var ok = VerifySignatureNative(file, out string thumbprint, out string errorDetail);
-                    var result = new FileVerificationResult
+                    try
                     {
-                        FilePath = file,
-                        IsValid = ok,
-                        Thumbprint = thumbprint,
-                        ErrorDetail = errorDetail
-                    };
+                        var ok = VerifySignatureNative(file, out string thumbprint, out string errorDetail);
+                        var result = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = ok,
+                            Thumbprint = thumbprint,
+                            ErrorDetail = errorDetail
+                        };
 
-                    // notify UI
-                    fileCallback(result);
+                        // notify UI (ReportFileResult will marshal to UI if needed)
+                        fileCallback(result);
 
-                    // log line
-                    if (ok)
-                    {
-                        WriteLog($"Valid   {file}");
-                        if (!string.IsNullOrEmpty(thumbprint)) WriteLog($"Signer Thumbprint  {thumbprint}");
+                        // log
+                        if (ok)
+                        {
+                            WriteLog($"Valid   {file}");
+                            if (!string.IsNullOrEmpty(thumbprint)) WriteLog($"Signer Thumbprint  {thumbprint}");
+                        }
+                        else
+                        {
+                            var fi = new FileInfo(file);
+                            WriteLog($"Invalid   {file}");
+                            WriteLog($"Modified  {fi.LastWriteTime}  Size  {fi.Length}");
+                            if (!string.IsNullOrEmpty(errorDetail)) WriteLog($"Detail: {errorDetail}");
+                        }
                     }
-                    else
+                    catch (System.Exception ex)
                     {
-                        var fi = new FileInfo(file);
-                        WriteLog($"Invalid   {file}");
-                        WriteLog($"Modified  {fi.LastWriteTime}  Size  {fi.Length}");
-                        if (!string.IsNullOrEmpty(errorDetail)) WriteLog($"Detail: {errorDetail}");
+                        var res = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = false,
+                            Thumbprint = null,
+                            ErrorDetail = "Exception: " + ex.Message
+                        };
+                        fileCallback(res);
+                        WriteLog($"Error processing {file}: {ex.Message}");
                     }
-                }
-                catch (System.Exception ex)
-                {
-                    var res = new FileVerificationResult
+                    finally
                     {
-                        FilePath = file,
-                        IsValid = false,
-                        Thumbprint = null,
-                        ErrorDetail = "Exception: " + ex.Message
-                    };
-                    fileCallback(res);
-                    WriteLog($"Error processing {file}: {ex.Message}");
-                }
-
-                processed++;
-                progress?.Report((int)((processed / (double)System.Math.Max(total, 1)) * 100));
+                        var done = Interlocked.Increment(ref processed);
+                        progress?.Report((int)((done / (double)System.Math.Max(total, 1)) * 100));
+                    }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                WriteLog("Operation cancelled by user.");
             }
 
             WriteLog("Finished verification: " + System.DateTime.Now.ToString("u"));
@@ -228,57 +240,68 @@ namespace Defender_Cab_Verification_Tool
             int processed = 0;
             progress?.Report(0);
 
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1),
+                CancellationToken = cancellationToken
+            };
+
             WriteLog($"Files to verify: {total}");
 
-            foreach (var file in filtered)
+            try
             {
-                if (cancellationToken.IsCancellationRequested)
+                Parallel.ForEach(filtered, parallelOptions, file =>
                 {
-                    WriteLog("Operation cancelled by user.");
-                    break;
-                }
+                    if (parallelOptions.CancellationToken.IsCancellationRequested) return;
 
-                try
-                {
-                    var ok = VerifySignatureNative(file, out string thumbprint, out string errorDetail);
-                    var result = new FileVerificationResult
+                    try
                     {
-                        FilePath = file,
-                        IsValid = ok,
-                        Thumbprint = thumbprint,
-                        ErrorDetail = errorDetail
-                    };
+                        var ok = VerifySignatureNative(file, out string thumbprint, out string errorDetail);
+                        var result = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = ok,
+                            Thumbprint = thumbprint,
+                            ErrorDetail = errorDetail
+                        };
 
-                    fileCallback(result);
+                        fileCallback(result);
 
-                    if (ok)
-                    {
-                        WriteLog($"Valid   {file}");
-                        if (!string.IsNullOrEmpty(thumbprint)) WriteLog($"Signer Thumbprint  {thumbprint}");
+                        if (ok)
+                        {
+                            WriteLog($"Valid   {file}");
+                            if (!string.IsNullOrEmpty(thumbprint)) WriteLog($"Signer Thumbprint  {thumbprint}");
+                        }
+                        else
+                        {
+                            var fi = new FileInfo(file);
+                            WriteLog($"Invalid   {file}");
+                            WriteLog($"Modified  {fi.LastWriteTime}  Size  {fi.Length}");
+                            if (!string.IsNullOrEmpty(errorDetail)) WriteLog($"Detail: {errorDetail}");
+                        }
                     }
-                    else
+                    catch (System.Exception ex)
                     {
-                        var fi = new FileInfo(file);
-                        WriteLog($"Invalid   {file}");
-                        WriteLog($"Modified  {fi.LastWriteTime}  Size  {fi.Length}");
-                        if (!string.IsNullOrEmpty(errorDetail)) WriteLog($"Detail: {errorDetail}");
+                        var res = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = false,
+                            Thumbprint = null,
+                            ErrorDetail = "Exception: " + ex.Message
+                        };
+                        fileCallback(res);
+                        WriteLog($"Error processing {file}: {ex.Message}");
                     }
-                }
-                catch (System.Exception ex)
-                {
-                    var res = new FileVerificationResult
+                    finally
                     {
-                        FilePath = file,
-                        IsValid = false,
-                        Thumbprint = null,
-                        ErrorDetail = "Exception: " + ex.Message
-                    };
-                    fileCallback(res);
-                    WriteLog($"Error processing {file}: {ex.Message}");
-                }
-
-                processed++;
-                progress?.Report((int)((processed / (double)System.Math.Max(total, 1)) * 100));
+                        var done = Interlocked.Increment(ref processed);
+                        progress?.Report((int)((done / (double)System.Math.Max(total, 1)) * 100));
+                    }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                WriteLog("Operation cancelled by user.");
             }
 
             WriteLog("Finished verification: " + System.DateTime.Now.ToString("u"));
@@ -322,57 +345,68 @@ namespace Defender_Cab_Verification_Tool
             int processed = 0;
             progress?.Report(0);
 
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1),
+                CancellationToken = cancellationToken
+            };
+
             WriteLog($"Files to verify: {total}");
 
-            foreach (var file in filtered)
+            try
             {
-                if (cancellationToken.IsCancellationRequested)
+                Parallel.ForEach(filtered, parallelOptions, file =>
                 {
-                    WriteLog("Operation cancelled by user.");
-                    break;
-                }
+                    if (parallelOptions.CancellationToken.IsCancellationRequested) return;
 
-                try
-                {
-                    var ok = VerifySignatureNative(file, out string thumbprint, out string errorDetail);
-                    var result = new FileVerificationResult
+                    try
                     {
-                        FilePath = file,
-                        IsValid = ok,
-                        Thumbprint = thumbprint,
-                        ErrorDetail = errorDetail
-                    };
+                        var ok = VerifySignatureNative(file, out string thumbprint, out string errorDetail);
+                        var result = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = ok,
+                            Thumbprint = thumbprint,
+                            ErrorDetail = errorDetail
+                        };
 
-                    fileCallback(result);
+                        fileCallback(result);
 
-                    if (ok)
-                    {
-                        WriteLog($"Valid   {file}");
-                        if (!string.IsNullOrEmpty(thumbprint)) WriteLog($"Signer Thumbprint  {thumbprint}");
+                        if (ok)
+                        {
+                            WriteLog($"Valid   {file}");
+                            if (!string.IsNullOrEmpty(thumbprint)) WriteLog($"Signer Thumbprint  {thumbprint}");
+                        }
+                        else
+                        {
+                            var fi = new FileInfo(file);
+                            WriteLog($"Invalid   {file}");
+                            WriteLog($"Modified  {fi.LastWriteTime}  Size  {fi.Length}");
+                            if (!string.IsNullOrEmpty(errorDetail)) WriteLog($"Detail: {errorDetail}");
+                        }
                     }
-                    else
+                    catch (System.Exception ex)
                     {
-                        var fi = new FileInfo(file);
-                        WriteLog($"Invalid   {file}");
-                        WriteLog($"Modified  {fi.LastWriteTime}  Size  {fi.Length}");
-                        if (!string.IsNullOrEmpty(errorDetail)) WriteLog($"Detail: {errorDetail}");
+                        var res = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = false,
+                            Thumbprint = null,
+                            ErrorDetail = "Exception: " + ex.Message
+                        };
+                        fileCallback(res);
+                        WriteLog($"Error processing {file}: {ex.Message}");
                     }
-                }
-                catch (System.Exception ex)
-                {
-                    var res = new FileVerificationResult
+                    finally
                     {
-                        FilePath = file,
-                        IsValid = false,
-                        Thumbprint = null,
-                        ErrorDetail = "Exception: " + ex.Message
-                    };
-                    fileCallback(res);
-                    WriteLog($"Error processing {file}: {ex.Message}");
-                }
-
-                processed++;
-                progress?.Report((int)((processed / (double)System.Math.Max(total, 1)) * 100));
+                        var done = Interlocked.Increment(ref processed);
+                        progress?.Report((int)((done / (double)System.Math.Max(total, 1)) * 100));
+                    }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                WriteLog("Operation cancelled by user.");
             }
 
             WriteLog("Finished verification: " + System.DateTime.Now.ToString("u"));
@@ -410,6 +444,30 @@ namespace Defender_Cab_Verification_Tool
 
         private static void ExpandCab(string cabFilePath, string destinationFolder, Action<string> log)
         {
+            // Try using managed Microsoft.Deployment.Compression.Cab if available (faster than spawning expand.exe).
+            try
+            {
+                var cabType = Type.GetType("Microsoft.Deployment.Compression.Cab.CabInfo, Microsoft.Deployment.Compression.Cab");
+                if (cabType != null)
+                {
+                    var ctor = cabType.GetConstructor(new[] { typeof(string) });
+                    var extractMethod = cabType.GetMethod("Extract", new[] { typeof(string) });
+                    if (ctor != null && extractMethod != null)
+                    {
+                        var cabInfo = ctor.Invoke(new object[] { cabFilePath });
+                        extractMethod.Invoke(cabInfo, new object[] { destinationFolder });
+                        log($"Extracted {Path.GetFileName(cabFilePath)} with managed CabInfo.");
+                        return;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                // best-effort; fall back to expand.exe
+                log($"Managed extraction failed: {ex.Message}");
+            }
+
+            // Fallback: use expand.exe (existing behavior) but read streams asynchronously
             try
             {
                 var psi = new ProcessStartInfo
@@ -421,16 +479,22 @@ namespace Defender_Cab_Verification_Tool
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
-                using (var p = Process.Start(psi))
+
+                using (var p = new Process { StartInfo = psi })
                 {
-                    if (p != null)
-                    {
-                        var stdout = p.StandardOutput.ReadToEnd();
-                        var stderr = p.StandardError.ReadToEnd();
-                        p.WaitForExit();
-                        if (!string.IsNullOrEmpty(stdout)) log(stdout.Trim());
-                        if (!string.IsNullOrEmpty(stderr)) log("expand.exe error: " + stderr.Trim());
-                    }
+                    var stdout = new StringBuilder();
+                    var stderr = new StringBuilder();
+
+                    p.OutputDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stdout.AppendLine(e.Data); };
+                    p.ErrorDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stderr.AppendLine(e.Data); };
+
+                    p.Start();
+                    p.BeginOutputReadLine();
+                    p.BeginErrorReadLine();
+                    p.WaitForExit();
+
+                    if (stdout.Length > 0) log(stdout.ToString().Trim());
+                    if (stderr.Length > 0) log("expand.exe error: " + stderr.ToString().Trim());
                 }
             }
             catch (System.Exception ex)

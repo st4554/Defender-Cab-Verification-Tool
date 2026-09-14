@@ -22,6 +22,7 @@ namespace Defender_Cab_Verification_Tool
             this.lblMaintainedBy = new System.Windows.Forms.Label();
             this.lblVersion = new System.Windows.Forms.Label();
             this.btnClose = new System.Windows.Forms.Button();
+            this.lblBuild = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // lblCreatedBy
@@ -63,9 +64,20 @@ namespace Defender_Cab_Verification_Tool
             this.btnClose.Text = "Close";
             this.btnClose.Click += new System.EventHandler(this.BtnClose_Click);
             // 
+            // lblBuild
+            // 
+            this.lblBuild.AutoSize = true;
+            this.lblBuild.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblBuild.Location = new System.Drawing.Point(12, 147);
+            this.lblBuild.Name = "lblBuild";
+            this.lblBuild.Size = new System.Drawing.Size(203, 25);
+            this.lblBuild.TabIndex = 5;
+            this.lblBuild.Text = "Build: Stable Release ";
+            // 
             // AboutForm
             // 
             this.ClientSize = new System.Drawing.Size(571, 211);
+            this.Controls.Add(this.lblBuild);
             this.Controls.Add(this.lblCreatedBy);
             this.Controls.Add(this.lblMaintainedBy);
             this.Controls.Add(this.lblVersion);
@@ -80,5 +92,7 @@ namespace Defender_Cab_Verification_Tool
             this.PerformLayout();
 
         }
+
+        private Label lblBuild;
     }
 }
