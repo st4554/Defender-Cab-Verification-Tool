@@ -12,6 +12,7 @@ A small Windows desktop utility that verifies the digital signatures of files co
 - Added Website links for Microsoft Defender Anti-Virus Definitions*, Platform Updates and Security Center**.
 
 *Will download the latest available definition exe file.
+
 **Only available in the x64 and ARM64 versions.
 
 ## Supported Architectures
