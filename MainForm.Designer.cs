@@ -47,6 +47,10 @@ namespace Defender_Cab_Verification_Tool
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.exitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.linksToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.antiVirusDefinitionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.platformUpdatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.securityCenterUpdatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnVerifyFile = new System.Windows.Forms.Button();
@@ -164,6 +168,7 @@ namespace Defender_Cab_Verification_Tool
             this.menuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileMenu,
+            this.linksToolStripMenuItem,
             this.helpMenu});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
@@ -184,6 +189,37 @@ namespace Defender_Cab_Verification_Tool
             this.exitMenuItem.Size = new System.Drawing.Size(116, 26);
             this.exitMenuItem.Text = "Exit";
             this.exitMenuItem.Click += new System.EventHandler(this.ExitMenuItem_Click);
+            // 
+            // linksToolStripMenuItem
+            // 
+            this.linksToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.antiVirusDefinitionsToolStripMenuItem,
+            this.platformUpdatesToolStripMenuItem,
+            this.securityCenterUpdatesToolStripMenuItem});
+            this.linksToolStripMenuItem.Name = "linksToolStripMenuItem";
+            this.linksToolStripMenuItem.Size = new System.Drawing.Size(55, 24);
+            this.linksToolStripMenuItem.Text = "Links";
+            // 
+            // antiVirusDefinitionsToolStripMenuItem
+            // 
+            this.antiVirusDefinitionsToolStripMenuItem.Name = "antiVirusDefinitionsToolStripMenuItem";
+            this.antiVirusDefinitionsToolStripMenuItem.Size = new System.Drawing.Size(250, 26);
+            this.antiVirusDefinitionsToolStripMenuItem.Text = "Anti-Virus definitions";
+            this.antiVirusDefinitionsToolStripMenuItem.Click += new System.EventHandler(this.antiVirusDefinitionsToolStripMenuItem_Click);
+            // 
+            // platformUpdatesToolStripMenuItem
+            // 
+            this.platformUpdatesToolStripMenuItem.Name = "platformUpdatesToolStripMenuItem";
+            this.platformUpdatesToolStripMenuItem.Size = new System.Drawing.Size(250, 26);
+            this.platformUpdatesToolStripMenuItem.Text = "Platform Updates";
+            this.platformUpdatesToolStripMenuItem.Click += new System.EventHandler(this.platformUpdatesToolStripMenuItem_Click);
+            // 
+            // securityCenterUpdatesToolStripMenuItem
+            // 
+            this.securityCenterUpdatesToolStripMenuItem.Name = "securityCenterUpdatesToolStripMenuItem";
+            this.securityCenterUpdatesToolStripMenuItem.Size = new System.Drawing.Size(250, 26);
+            this.securityCenterUpdatesToolStripMenuItem.Text = "Security Center Updates";
+            this.securityCenterUpdatesToolStripMenuItem.Click += new System.EventHandler(this.securityCenterUpdatesToolStripMenuItem_Click);
             // 
             // helpMenu
             // 
@@ -227,7 +263,7 @@ namespace Defender_Cab_Verification_Tool
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Defender CAB Verification Tool v3.0.29667.0 x64";
+            this.Text = "Defender CAB Verification Tool v3.0.29671.0 x64";
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
             this.menuStrip.ResumeLayout(false);
@@ -238,6 +274,10 @@ namespace Defender_Cab_Verification_Tool
         }
 
         private Button btnVerifyFile;
+        private ToolStripMenuItem linksToolStripMenuItem;
+        private ToolStripMenuItem antiVirusDefinitionsToolStripMenuItem;
+        private ToolStripMenuItem platformUpdatesToolStripMenuItem;
+        private ToolStripMenuItem securityCenterUpdatesToolStripMenuItem;
     }
 }
 

@@ -30,7 +30,7 @@ namespace Defender_Cab_Verification_Tool
                 if (build < MinSupportedBuild)
                 {
                     var msg =
-                        $"Defender Cab Verification Tool requires x86 version of Windows 10 version 21H2 (build {MinSupportedBuild}) or later.\r\n" +
+                        $"Defender Cab Verification Tool requires x64 version of Windows 10 version 21H2 (build {MinSupportedBuild}) or later.\r\n" +
                         $"Detected OS build: {build}. The application will now exit.";
                     MessageBox.Show(this, msg, "Unsupported OS", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Close();
@@ -439,6 +439,36 @@ namespace Defender_Cab_Verification_Tool
             {
                 log("Unexpected cleanup error: " + ex.Message);
             }
+        }
+
+        private void antiVirusDefinitionsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Open the Microsoft Defender Antivirus definitions download page in the default browser
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://go.microsoft.com/fwlink/?LinkID=121721&arch=x64",
+                UseShellExecute = true
+            });
+        }
+
+        private void platformUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Open the Microsoft Defender platform updates download page in the default browser
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://www.catalog.update.microsoft.com/Search.aspx?q=KB4052623",
+                UseShellExecute = true
+            });
+        }
+
+        private void securityCenterUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Open the Microsoft Defender Security Center updates download page in the default browser
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://www.catalog.update.microsoft.com/Search.aspx?q=KB5007651",
+                UseShellExecute = true
+            });
         }
     }
 
