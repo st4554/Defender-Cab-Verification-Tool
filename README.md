@@ -10,25 +10,26 @@ A small Windows desktop utility that verifies the digital signatures of files co
 - Per-file results shown in the UI and exportable to CSV.
 - Generates timestamped logs in the `logs` folder.
 - Added Website links for Microsoft Defender Anti-Virus Definitions*, Platform Updates and Security Center**.
+- Now will only extract defender cabs, non-defender cabs will not be verified anymore.
 
 *Will download the latest available definition exe file.
 
-**Only available in the x64 and ARM64 versions.
+**x64 and x86 versions are only available, as for ARM64 users please use the x64 version to extract defender cab.
 
 ## Supported Architectures
 
 This release includes packages and support for the following architectures:
 
-- `arm64`
 - `x64`
 - `x86`
+
+Please note - ARM64 build has been deprecated!
 
 Use the appropriate exe files for the target architecture.
 
 ## Usage (GUI)
 
-1. Click `Verify` to select a folder that contains `defender-dism-*.cab` files and verify all supported CABs found there.
-2. Click `Verify File` to choose a single `.cab` to expand and verify.
+1. Click `Verify File` to choose a single `.cab` to expand and verify.
 3. Click `Export CSV` after a run to save results to a CSV file.
 4. Click `Open Logs` to view verification and cleanup logs in the `logs` folder.
 
