@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -11,14 +12,6 @@ using System.Threading.Tasks;
 
 namespace Defender_Cab_Verification_Tool
 {
-    public class FileVerificationResult
-    {
-        public string FilePath { get; set; }
-        public bool IsValid { get; set; }
-        public string Thumbprint { get; set; }
-        public string ErrorDetail { get; set; }
-    }
-
     public static class DefenderCabVerifier
     {
         private static readonly string[] ExtensionsFilter = new[]
@@ -442,64 +435,407 @@ namespace Defender_Cab_Verification_Tool
             }
         }
 
-        private static void ExpandCab(string cabFilePath, string destinationFolder, Action<string> log)
+        /// <summary>
+        /// Try to enumerate CAB entries using the managed Microsoft.Deployment.Compression.Cab API via reflection.
+        /// Returns true and populates entries if the managed API is available and enumeration succeeded.
+        /// </summary>
+        private static bool TryManagedList(string cabFilePath, out List<string> entries, Action<string> log = null)
         {
-            // Try using managed Microsoft.Deployment.Compression.Cab if available (faster than spawning expand.exe).
+            entries = null;
             try
             {
                 var cabType = Type.GetType("Microsoft.Deployment.Compression.Cab.CabInfo, Microsoft.Deployment.Compression.Cab");
-                if (cabType != null)
+                if (cabType == null) return false;
+
+                var ctor = cabType.GetConstructor(new[] { typeof(string) });
+                if (ctor == null) return false;
+
+                var cabInstance = ctor.Invoke(new object[] { cabFilePath });
+                if (cabInstance == null) return false;
+
+                // Prefer instance methods that take no parameters and return some enumerable
+                var methods = cabType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
+                foreach (var m in methods)
                 {
-                    var ctor = cabType.GetConstructor(new[] { typeof(string) });
-                    var extractMethod = cabType.GetMethod("Extract", new[] { typeof(string) });
-                    if (ctor != null && extractMethod != null)
+                    if (!string.Equals(m.Name, "GetFiles", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(m.Name, "GetFileNames", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(m.Name, "GetEntries", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(m.Name, "GetEnumerator", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(m.Name, "Files", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(m.Name, "Entries", StringComparison.OrdinalIgnoreCase))
                     {
-                        var cabInfo = ctor.Invoke(new object[] { cabFilePath });
-                        extractMethod.Invoke(cabInfo, new object[] { destinationFolder });
-                        log($"Extracted {Path.GetFileName(cabFilePath)} with managed CabInfo.");
-                        return;
+                        continue;
+                    }
+
+                    var pars = m.GetParameters();
+                    if (pars.Length != 0) continue;
+
+                    var result = m.Invoke(cabInstance, null);
+                    if (result == null) continue;
+
+                    entries = new List<string>();
+
+                    if (result is string[] arr)
+                    {
+                        entries.AddRange(arr);
+                        log?.Invoke($"Managed list: method {m.Name} returned {arr.Length} string entries.");
+                        return true;
+                    }
+
+                    if (result is IEnumerable<string> se)
+                    {
+                        entries.AddRange(se);
+                        log?.Invoke($"Managed list: method {m.Name} returned IEnumerable<string> ({entries.Count} entries).");
+                        return true;
+                    }
+
+                    if (result is System.Collections.IEnumerable ie)
+                    {
+                        foreach (var o in ie)
+                        {
+                            if (o == null) continue;
+                            if (o is string s) entries.Add(s);
+                            else
+                            {
+                                // Inspect common name properties on the entry object
+                                var props = o.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                                string candidate = null;
+                                foreach (var p in props)
+                                {
+                                    if (string.Equals(p.Name, "Name", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(p.Name, "FileName", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(p.Name, "EntryName", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(p.Name, "SourceName", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        try
+                                        {
+                                            var val = p.GetValue(o) as string;
+                                            if (!string.IsNullOrEmpty(val)) { candidate = val; break; }
+                                        }
+                                        catch { }
+                                    }
+                                }
+                                entries.Add(candidate ?? o.ToString());
+                            }
+                        }
+                        log?.Invoke($"Managed list: method {m.Name} returned IEnumerable objects ({entries.Count} entries).");
+                        return true;
                     }
                 }
-            }
-            catch (System.Exception ex)
-            {
-                // best-effort; fall back to expand.exe
-                log($"Managed extraction failed: {ex.Message}");
-            }
 
-            // Fallback: use expand.exe (existing behavior) but read streams asynchronously
+                // Try property-based enumeration (some libs expose Files/Entries as properties)
+                var propsList = cabType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                foreach (var p in propsList)
+                {
+                    if (!string.Equals(p.Name, "Files", StringComparison.OrdinalIgnoreCase) &&
+                        !string.Equals(p.Name, "Entries", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var result = p.GetValue(cabInstance);
+                    if (result == null) continue;
+
+                    entries = new List<string>();
+
+                    if (result is string[] arrp)
+                    {
+                        entries.AddRange(arrp);
+                        log?.Invoke($"Managed list: property {p.Name} returned {arrp.Length} string entries.");
+                        return true;
+                    }
+
+                    if (result is IEnumerable<string> sep)
+                    {
+                        entries.AddRange(sep);
+                        log?.Invoke($"Managed list: property {p.Name} returned IEnumerable<string> ({entries.Count} entries).");
+                        return true;
+                    }
+
+                    if (result is System.Collections.IEnumerable iep)
+                    {
+                        foreach (var o in iep)
+                        {
+                            if (o == null) continue;
+                            if (o is string s) entries.Add(s);
+                            else
+                            {
+                                var props = o.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                                string candidate = null;
+                                foreach (var pp in props)
+                                {
+                                    if (string.Equals(pp.Name, "Name", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(pp.Name, "FileName", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(pp.Name, "EntryName", StringComparison.OrdinalIgnoreCase) ||
+                                        string.Equals(pp.Name, "SourceName", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        try
+                                        {
+                                            var val = pp.GetValue(o) as string;
+                                            if (!string.IsNullOrEmpty(val)) { candidate = val; break; }
+                                        }
+                                        catch { }
+                                    }
+                                }
+                                entries.Add(candidate ?? o.ToString());
+                            }
+                        }
+                        log?.Invoke($"Managed list: property {p.Name} returned IEnumerable objects ({entries.Count} entries).");
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                log?.Invoke($"Managed listing failed for {Path.GetFileName(cabFilePath)}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static bool TryManagedExtractSelective(string cabFilePath, string destinationFolder, Action<string> log)
+        {
             try
             {
-                var psi = new ProcessStartInfo
+                if (!TryManagedList(cabFilePath, out var entries, log))
                 {
-                    FileName = "expand",
-                    Arguments = $"-R \"{cabFilePath}\" -F:* \"{destinationFolder}\"",
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
+                    // Managed API not available or couldn't enumerate
+                    return false;
+                }
 
-                using (var p = new Process { StartInfo = psi })
+                if (entries != null)
                 {
-                    var stdout = new StringBuilder();
-                    var stderr = new StringBuilder();
+                    log?.Invoke($"Managed entries count: {entries.Count}. Sample: {string.Join(", ", entries.Take(5))}");
+                }
 
-                    p.OutputDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stdout.AppendLine(e.Data); };
-                    p.ErrorDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stderr.AppendLine(e.Data); };
+                // Look for package-defender.xml anywhere in the path strings
+                bool hasPackageDefender = entries != null && entries.Any(e => e != null && e.IndexOf("package-defender.xml", StringComparison.OrdinalIgnoreCase) >= 0);
+                if (!hasPackageDefender)
+                {
+                    log?.Invoke($"Skipping non-Defender CAB (managed): {Path.GetFileName(cabFilePath)} - 'package-defender.xml' not found in entries.");
+                    return true; // managed path handled the decision (skip)
+                }
 
-                    p.Start();
-                    p.BeginOutputReadLine();
-                    p.BeginErrorReadLine();
-                    p.WaitForExit();
+                // Build set of entries to extract (match extensions or exact filename anywhere in path)
+                var allowedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "package-defender.xml" };
+                var allowedExtensions = new HashSet<string>(ExtensionsFilter, StringComparer.OrdinalIgnoreCase);
 
-                    if (stdout.Length > 0) log(stdout.ToString().Trim());
-                    if (stderr.Length > 0) log("expand.exe error: " + stderr.ToString().Trim());
+                var toExtract = new List<string>();
+                foreach (var entry in entries)
+                {
+                    if (string.IsNullOrEmpty(entry)) continue;
+                    var fileName = Path.GetFileName(entry);
+                    var ext = Path.GetExtension(fileName) ?? string.Empty;
+                    if (allowedExtensions.Contains(ext) || allowedNames.Contains(fileName) || entry.IndexOf("package-defender.xml", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        toExtract.Add(entry);
+                    }
+                }
+
+                if (toExtract.Count == 0)
+                {
+                    log?.Invoke($"No allowed entries found inside Defender CAB (managed) {Path.GetFileName(cabFilePath)}.");
+                    return true;
+                }
+
+                // Create destination folder
+                Directory.CreateDirectory(destinationFolder);
+
+                var cabType = Type.GetType("Microsoft.Deployment.Compression.Cab.CabInfo, Microsoft.Deployment.Compression.Cab");
+                if (cabType == null) return false;
+                var ctor = cabType.GetConstructor(new[] { typeof(string) });
+                if (ctor == null) return false;
+                var cabInstance = ctor.Invoke(new object[] { cabFilePath });
+                if (cabInstance == null) return false;
+
+                // Find an extract method that accepts (string entryName, string destinationFile)
+                MethodInfo extractMethod = null;
+                foreach (var mi in cabType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (!mi.Name.StartsWith("Extract", StringComparison.OrdinalIgnoreCase)) continue;
+                    var pars = mi.GetParameters();
+                    if (pars.Length == 2 && pars[0].ParameterType == typeof(string) && pars[1].ParameterType == typeof(string))
+                    {
+                        extractMethod = mi;
+                        break;
+                    }
+                }
+
+                if (extractMethod == null)
+                {
+                    log?.Invoke("Managed Cab API present but no per-file extract method found; falling back to expand.exe.");
+                    return false;
+                }
+
+                // Extract each selected entry
+                foreach (var entry in toExtract)
+                {
+                    var relativePath = entry.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar).TrimStart(Path.DirectorySeparatorChar);
+                    var destFilePath = Path.Combine(destinationFolder, relativePath);
+                    var destFolder = Path.GetDirectoryName(destFilePath);
+                    if (!string.IsNullOrEmpty(destFolder) && !Directory.Exists(destFolder))
+                        Directory.CreateDirectory(destFolder);
+
+                    try
+                    {
+                        extractMethod.Invoke(cabInstance, new object[] { entry, destFilePath });
+                        log?.Invoke($"Managed extracted: {entry} -> {destFilePath}");
+                    }
+                    catch (TargetInvocationException tie)
+                    {
+                        log?.Invoke($"Managed extraction failed for {entry}: {tie.InnerException?.Message ?? tie.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        log?.Invoke($"Managed extraction failed for {entry}: {ex.Message}");
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log?.Invoke($"Managed extraction attempt failed for {Path.GetFileName(cabFilePath)}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static void ExpandCab(string cabFilePath, string destinationFolder, Action<string> log)
+        {
+            // First attempt: managed selective extraction (if available)
+            try
+            {
+                var managedHandled = TryManagedExtractSelective(cabFilePath, destinationFolder, log);
+                if (managedHandled)
+                {
+                    // Managed API either extracted selected files or decided to skip non-defender CAB
+                    return;
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                log("Failed expanding " + cabFilePath + ": " + ex.Message);
+                log?.Invoke($"Managed extraction path failed: {ex.Message}");
+                // fall through to expand.exe fallback
+            }
+
+            // Confirm it's a defender CAB using IsDefenderCab (which will use managed listing if possible, else expand -D)
+            if (!IsDefenderCab(cabFilePath, log))
+            {
+                log?.Invoke($"Skipping non-Defender CAB: {Path.GetFileName(cabFilePath)} - 'package-defender.xml' not found.");
+                return;
+            }
+
+            // Create destination folder
+            try
+            {
+                Directory.CreateDirectory(destinationFolder);
+            }
+            catch (Exception ex)
+            {
+                log?.Invoke($"Failed to create destination folder {destinationFolder}: {ex.Message}");
+                return;
+            }
+
+            // First extract the package-defender.xml explicitly (single file call)
+            var extractSingle = new Func<string, bool>((entryName) =>
+            {
+                var args = $"-F:{entryName} \"{cabFilePath}\" \"{destinationFolder}\"";
+                try
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "expand",
+                        Arguments = args,
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    };
+
+                    using (var p = new Process { StartInfo = psi })
+                    {
+                        var stdout = new StringBuilder();
+                        var stderr = new StringBuilder();
+                        p.OutputDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stdout.AppendLine(e.Data); };
+                        p.ErrorDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stderr.AppendLine(e.Data); };
+                        p.Start();
+                        p.BeginOutputReadLine();
+                        p.BeginErrorReadLine();
+                        p.WaitForExit();
+
+                        log?.Invoke(stdout.ToString().Trim());
+                        if (p.ExitCode == 0)
+                        {
+                            log?.Invoke($"expand extracted {entryName} from {Path.GetFileName(cabFilePath)}.");
+                            return true;
+                        }
+                        else
+                        {
+                            log?.Invoke($"expand.exe error extracting {entryName} from {Path.GetFileName(cabFilePath)}: {stderr.ToString().Trim()} (exit {p.ExitCode})");
+                            return false;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log?.Invoke($"Exception running expand for {entryName}: {ex.Message}");
+                    return false;
+                }
+            });
+
+            // Try extract package-defender.xml first
+            bool gotPackageXml = extractSingle("package-defender.xml");
+
+            // If package-defender.xml wasn't extracted, still attempt to continue — but log and proceed to try other allowed patterns if you want
+            if (!gotPackageXml)
+            {
+                log?.Invoke($"Warning: package-defender.xml extraction returned non-zero for {Path.GetFileName(cabFilePath)}.");
+                // continue - maybe other files will extract or expand implementation behaves differently
+            }
+
+            // Now extract allowed extensions one-by-one to reduce expand.exe argument complexity and avoid ambiguous failures.
+            foreach (var ext in ExtensionsFilter)
+            {
+                if (string.IsNullOrWhiteSpace(ext)) continue;
+                var pattern = ext.StartsWith(".") ? $"*{ext}" : $"*{ext}";
+                var args = $"-F:{pattern} \"{cabFilePath}\" \"{destinationFolder}\"";
+                try
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = "expand",
+                        Arguments = args,
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true
+                    };
+
+                    using (var p = new Process { StartInfo = psi })
+                    {
+                        var stdout = new StringBuilder();
+                        var stderr = new StringBuilder();
+                        p.OutputDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stdout.AppendLine(e.Data); };
+                        p.ErrorDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) stderr.AppendLine(e.Data); };
+                        p.Start();
+                        p.BeginOutputReadLine();
+                        p.BeginErrorReadLine();
+                        p.WaitForExit();
+
+                        if (stdout.Length > 0) log?.Invoke(stdout.ToString().Trim());
+                        if (p.ExitCode == 0)
+                        {
+                            log?.Invoke($"expand extracted pattern {pattern} from {Path.GetFileName(cabFilePath)}.");
+                        }
+                        else
+                        {
+                            log?.Invoke($"expand.exe returned {p.ExitCode} for pattern {pattern} on {Path.GetFileName(cabFilePath)}: {stderr.ToString().Trim()}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log?.Invoke($"Failed expanding {cabFilePath} for pattern {pattern}: {ex.Message}");
+                }
             }
         }
 
@@ -562,6 +898,24 @@ namespace Defender_Cab_Verification_Tool
             {
                 if (pFileInfo != IntPtr.Zero) Marshal.FreeHGlobal(pFileInfo);
             }
+        }
+
+        private static bool IsDefenderCab(string cabFilePath, Action<string> log)
+        {
+            // Example implementation: check if the file name contains "defender-dism"
+            if (string.IsNullOrEmpty(cabFilePath))
+            {
+                log?.Invoke("CAB file path is null or empty.");
+                return false;
+            }
+
+            string fileName = Path.GetFileName(cabFilePath);
+            bool isDefender = fileName != null && fileName.StartsWith("defender-dism", StringComparison.OrdinalIgnoreCase);
+            if (!isDefender)
+            {
+                log?.Invoke($"File {fileName} is not recognized as a Defender CAB.");
+            }
+            return isDefender;
         }
     }
 }

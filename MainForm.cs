@@ -30,7 +30,7 @@ namespace Defender_Cab_Verification_Tool
                 if (build < MinSupportedBuild)
                 {
                     var msg =
-                        $"Defender Cab Verification Tool requires x64 version of Windows 10 version 21H2 (build {MinSupportedBuild}) or later.\r\n" +
+                        $"Defender Cab Verification Tool requires x6464 version of Windows 10 version 21H2 (build {MinSupportedBuild}) or later.\r\n" +
                         $"Detected OS build: {build}. The application will now exit.";
                     MessageBox.Show(this, msg, "Unsupported OS", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Close();
@@ -461,7 +461,7 @@ namespace Defender_Cab_Verification_Tool
             });
         }
 
-        private void securityCenterUpdatesToolStripMenuItem_Click(object sender, EventArgs e)
+        private void securityCenterToolStripMenuItem_Click_1(object sender, EventArgs e)
         {
             // Open the Microsoft Defender Security Center updates download page in the default browser
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
