@@ -1,10 +1,12 @@
 ﻿using System;
+
+using System.Windows.Forms;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Defender_Cab_Verification_Tool
 {
@@ -30,7 +32,7 @@ namespace Defender_Cab_Verification_Tool
                 if (build < MinSupportedBuild)
                 {
                     var msg =
-                        $"Defender Cab Verification Tool requires x6464 version of Windows 10 version 21H2 (build {MinSupportedBuild}) or later.\r\n" +
+                        $"Defender Cab Verification Tool requires x64 version of Windows 10 version 21H2 (build {MinSupportedBuild}) or later.\r\n" +
                         $"Detected OS build: {build}. The application will now exit.";
                     MessageBox.Show(this, msg, "Unsupported OS", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     Close();
@@ -94,11 +96,16 @@ namespace Defender_Cab_Verification_Tool
 
         private void BtnVerify_Click(object sender, EventArgs e)
         {
-            using (var fbd = new FolderBrowserDialog())
+            using (var ofd = new OpenFileDialog())
             {
-                fbd.Description = "Select folder containing Defender CAB files (defender-dism-*.cab)";
-                if (fbd.ShowDialog(this) != DialogResult.OK) return;
-                StartVerification(fbd.SelectedPath);
+                ofd.Title = "Select Defender CAB files (defender-dism-*.cab)";
+                ofd.Filter = "CAB files (*.cab)|*.cab";
+                ofd.CheckFileExists = true;
+                ofd.Multiselect = true;
+                ofd.DefaultExt = "cab";
+                if (ofd.ShowDialog(this) != DialogResult.OK) return;
+
+                StartVerificationForMultipleCabs(ofd.FileNames);
             }
         }
 
@@ -247,7 +254,44 @@ namespace Defender_Cab_Verification_Tool
             item.SubItems.Add(result.ErrorDetail ?? string.Empty);
             item.ForeColor = result.IsValid ? Color.DarkGreen : Color.DarkRed;
             listViewResults.Items.Add(item);
+            
+            // Sort by architecture after adding
+            SortListViewByArchitecture();
             listViewResults.EnsureVisible(listViewResults.Items.Count - 1);
+        }
+
+        private void SortListViewByArchitecture()
+        {
+            // Disable redraw during sorting for performance
+            listViewResults.BeginUpdate();
+            
+            var items = listViewResults.Items.Cast<ListViewItem>().ToList();
+            
+            // Sort by architecture priority, then by filename
+            var sorted = items.OrderBy(item => GetArchitecturePriority(item.SubItems[1].Text))
+                              .ThenBy(item => item.SubItems[1].Text)
+                              .ToList();
+            
+            listViewResults.Items.Clear();
+            foreach (var item in sorted)
+            {
+                listViewResults.Items.Add(item);
+            }
+            
+            listViewResults.EndUpdate();
+        }
+
+        private int GetArchitecturePriority(string filePath)
+        {
+            // Extract architecture from path
+            if (filePath.Contains("\\x86\\") || filePath.Contains("/x86/"))
+                return 1; // x86 first
+            else if (filePath.Contains("\\x64\\") || filePath.Contains("/x64/"))
+                return 2; // x64 second
+            else if (filePath.Contains("\\arm64\\") || filePath.Contains("/arm64/"))
+                return 3; // arm64 third
+            
+            return 99; // unknown last
         }
 
         private void ReportStatus(string text)
@@ -312,6 +356,52 @@ namespace Defender_Cab_Verification_Tool
                 {
                     DefenderCabVerifier.VerifyCab(
                         cabFile,
+                        fileResult => ReportFileResult(fileResult),
+                        progress,
+                        text => ReportStatus(text),
+                        _cts.Token);
+                }
+                finally
+                {
+                    this.BeginInvoke((Action)(() =>
+                    {
+                        btnVerify.Enabled = true;
+                        btnCancel.Enabled = false;
+                        btnExportCsv.Enabled = listViewResults.Items.Count > 0;
+                        statusLabel.Text = "Finished";
+                    }));
+                }
+            });
+        }
+
+        private void StartVerificationForMultipleCabs(string[] cabFiles)
+        {
+            btnVerify.Enabled = false;
+            btnCancel.Enabled = true;
+            btnExportCsv.Enabled = false;
+            listViewResults.Items.Clear();
+            progressBar.Value = 0;
+            lblProgressPercent.Text = "0%";
+            statusLabel.Text = "Verifying...";
+            _cts = new CancellationTokenSource();
+
+            var progress = new Progress<int>(percent =>
+            {
+                try
+                {
+                    progressBar.Value = Math.Min(Math.Max(percent, 0), 100);
+                    lblProgressPercent.Text = $"{progressBar.Value}%";
+                }
+                catch { }
+            });
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    // Extract all CAB files into separate architecture-specific folders
+                    DefenderCabVerifier.VerifyMultipleCabs(
+                        cabFiles,
                         fileResult => ReportFileResult(fileResult),
                         progress,
                         text => ReportStatus(text),

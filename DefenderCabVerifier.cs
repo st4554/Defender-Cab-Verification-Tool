@@ -406,6 +406,136 @@ namespace Defender_Cab_Verification_Tool
             WriteLog("Log saved to: " + logfile);
         }
 
+        public static void VerifyMultipleCabs(string[] cabFiles, Action<FileVerificationResult> fileCallback, IProgress<int> progress, Action<string> logLine, CancellationToken cancellationToken)
+        {
+            if (cabFiles == null || cabFiles.Length == 0) throw new ArgumentException("No CAB files provided", nameof(cabFiles));
+            if (fileCallback == null) throw new ArgumentNullException(nameof(fileCallback));
+            if (logLine == null) throw new ArgumentNullException(nameof(logLine));
+
+            Directory.CreateDirectory(LogsFolder);
+            string logfile = Path.Combine(LogsFolder, $"verify-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+
+            void WriteLog(string s)
+            {
+                try { File.AppendAllText(logfile, s + System.Environment.NewLine, Encoding.UTF8); } catch { }
+                logLine(s);
+            }
+
+            WriteLog("Starting Defender CAB verification (multiple CABs): " + System.DateTime.Now.ToString("u"));
+
+            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            string root = Path.Combine(baseDir, "defender-dism");
+            try { if (Directory.Exists(root)) Directory.Delete(root, true); } catch (System.Exception ex) { WriteLog("Warning: could not remove existing root folder: " + ex.Message); }
+            Directory.CreateDirectory(root);
+
+            // Extract each CAB into its own subfolder to preserve all files
+            foreach (var cabFile in cabFiles)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                    break;
+
+                if (!File.Exists(cabFile))
+                {
+                    WriteLog($"Warning: CAB file not found: {cabFile}");
+                    continue;
+                }
+
+                // Determine architecture from filename
+                string arch = "unknown";
+                if (cabFile.Contains("x86"))
+                    arch = "x86";
+                else if (cabFile.Contains("arm64"))
+                    arch = "arm64";
+                else if (cabFile.Contains("x64"))
+                    arch = "x64";
+
+                var targetFolder = Path.Combine(root, arch);
+                try { if (Directory.Exists(targetFolder)) Directory.Delete(targetFolder, true); } catch { }
+                Directory.CreateDirectory(targetFolder);
+
+                WriteLog($"Extracting {arch} CAB: {cabFile}");
+                ExpandCab(cabFile, targetFolder, WriteLog);
+            }
+
+            var filesList = new List<string>();
+            if (Directory.Exists(root))
+            {
+                filesList.AddRange(Directory.EnumerateFiles(root, "*.*", SearchOption.AllDirectories));
+            }
+
+            var filtered = filesList.Where(f => ExtensionsFilter.Contains(Path.GetExtension(f) ?? string.Empty, System.StringComparer.OrdinalIgnoreCase)).ToList();
+            int total = filtered.Count;
+            int processed = 0;
+            progress?.Report(0);
+
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1),
+                CancellationToken = cancellationToken
+            };
+
+            WriteLog($"Files to verify: {total}");
+
+            try
+            {
+                Parallel.ForEach(filtered, parallelOptions, file =>
+                {
+                    if (parallelOptions.CancellationToken.IsCancellationRequested) return;
+
+                    try
+                    {
+                        var ok = VerifySignatureNative(file, out string thumbprint, out string errorDetail);
+                        var result = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = ok,
+                            Thumbprint = thumbprint,
+                            ErrorDetail = errorDetail
+                        };
+
+                        fileCallback(result);
+
+                        if (ok)
+                        {
+                            WriteLog($"Valid   {file}");
+                            if (!string.IsNullOrEmpty(thumbprint)) WriteLog($"Signer Thumbprint  {thumbprint}");
+                        }
+                        else
+                        {
+                            var fi = new FileInfo(file);
+                            WriteLog($"Invalid   {file}");
+                            WriteLog($"Modified  {fi.LastWriteTime}  Size  {fi.Length}");
+                            if (!string.IsNullOrEmpty(errorDetail)) WriteLog($"Detail: {errorDetail}");
+                        }
+                    }
+                    catch (System.Exception ex)
+                    {
+                        var res = new FileVerificationResult
+                        {
+                            FilePath = file,
+                            IsValid = false,
+                            Thumbprint = null,
+                            ErrorDetail = "Exception: " + ex.Message
+                        };
+                        fileCallback(res);
+                        WriteLog($"Error processing {file}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        var done = Interlocked.Increment(ref processed);
+                        progress?.Report((int)((done / (double)Math.Max(total, 1)) * 100));
+                    }
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                WriteLog("Operation cancelled by user.");
+            }
+
+            WriteLog("Finished verification: " + System.DateTime.Now.ToString("u"));
+            WriteLog("Log saved to: " + logfile);
+        }
+
         private static string GetLatestCab(string pattern)
         {
             try

@@ -61,7 +61,7 @@ namespace Defender_Cab_Verification_Tool
             // btnCancel
             // 
             this.btnCancel.Enabled = false;
-            this.btnCancel.Location = new System.Drawing.Point(210, 31);
+            this.btnCancel.Location = new System.Drawing.Point(428, 30);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 34);
             this.btnCancel.TabIndex = 4;
@@ -135,7 +135,7 @@ namespace Defender_Cab_Verification_Tool
             // 
             // colThumbprint
             // 
-            this.colThumbprint.Text = "Thumbprint";
+            this.colThumbprint.Text = "File Hash (SHA-1)";
             this.colThumbprint.Width = 400;
             // 
             // statusStrip
@@ -163,7 +163,7 @@ namespace Defender_Cab_Verification_Tool
             this.helpMenu});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
-            this.menuStrip.Size = new System.Drawing.Size(1437, 30);
+            this.menuStrip.Size = new System.Drawing.Size(1437, 28);
             this.menuStrip.TabIndex = 7;
             // 
             // fileMenu
@@ -171,7 +171,7 @@ namespace Defender_Cab_Verification_Tool
             this.fileMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.exitMenuItem});
             this.fileMenu.Name = "fileMenu";
-            this.fileMenu.Size = new System.Drawing.Size(46, 26);
+            this.fileMenu.Size = new System.Drawing.Size(46, 24);
             this.fileMenu.Text = "File";
             // 
             // exitMenuItem
@@ -188,7 +188,7 @@ namespace Defender_Cab_Verification_Tool
             this.platformUpdatesToolStripMenuItem,
             this.securityCenterToolStripMenuItem});
             this.linksToolStripMenuItem.Name = "linksToolStripMenuItem";
-            this.linksToolStripMenuItem.Size = new System.Drawing.Size(55, 26);
+            this.linksToolStripMenuItem.Size = new System.Drawing.Size(55, 24);
             this.linksToolStripMenuItem.Text = "Links";
             // 
             // antiVirusDefinitionsToolStripMenuItem
@@ -217,7 +217,7 @@ namespace Defender_Cab_Verification_Tool
             this.helpMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.aboutMenuItem});
             this.helpMenu.Name = "helpMenu";
-            this.helpMenu.Size = new System.Drawing.Size(55, 26);
+            this.helpMenu.Size = new System.Drawing.Size(55, 24);
             this.helpMenu.Text = "Help";
             // 
             // aboutMenuItem
@@ -238,12 +238,11 @@ namespace Defender_Cab_Verification_Tool
             // 
             // btnVerify
             // 
-            this.btnVerify.Location = new System.Drawing.Point(548, 30);
+            this.btnVerify.Location = new System.Drawing.Point(210, 30);
             this.btnVerify.Name = "btnVerify";
             this.btnVerify.Size = new System.Drawing.Size(212, 34);
             this.btnVerify.TabIndex = 3;
             this.btnVerify.Text = "Verify Multiple Defender CAB";
-            this.btnVerify.Visible = false;
             this.btnVerify.Click += new System.EventHandler(this.BtnVerify_Click);
             // 
             // MainForm
@@ -265,7 +264,7 @@ namespace Defender_Cab_Verification_Tool
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Defender CAB Verification Tool v3.0.29680.0 x64";
+            this.Text = "Defender CAB Verification Tool v3.0.29700.0 x64";
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
             this.menuStrip.ResumeLayout(false);
