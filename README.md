@@ -1,6 +1,6 @@
 # Defender Cab Verification Tool
 
-<img width="1024" height="467" alt="Screenshot 2026-09-29 164008" src="https://github.com/user-attachments/assets/139188a5-c962-4db8-83be-dd5cdfa1044a" />
+<img width="1798" height="821" alt="Screenshot 2026-10-15 165848" src="https://github.com/user-attachments/assets/ce2ff488-8b85-4add-8afe-3506870b42cd" />
 
 A small Windows desktop utility that verifies the digital signatures of files contained inside Microsoft Defender CAB packages (files named like `defender-dism-*.cab`). The tool expands CAB archives, walks through the extracted files, and uses native WinTrust checks to report whether each file is signed and whether its signature is valid.
 
@@ -8,7 +8,7 @@ A small Windows desktop utility that verifies the digital signatures of files co
 
 - Expand and verify contents of `defender-dism-*.cab` packages.
 - Verify CABs found in the application folder or a user-selected folder.
-- Open a single `.cab` via file picker and verify its contents.
+- Open a single or multiple `.cab` via file picker and verify its contents.
 - Per-file results shown in the UI and exportable to CSV.
 - Generates timestamped logs in the `logs` folder.
 - Added Website links for Microsoft Defender Anti-Virus Definitions*, Platform Updates and Security Center**.
@@ -31,7 +31,7 @@ Use the appropriate exe files for the target architecture.
 
 ## Usage (GUI)
 
-1. Click `Verify File` to choose a single `.cab` to expand and verify.
+1. Click `Verify File` to choose a single or multiple `.cab` to expand and verify.
 3. Click `Export CSV` after a run to save results to a CSV file.
 4. Click `Open Logs` to view verification and cleanup logs in the `logs` folder.
 
