@@ -52,6 +52,9 @@ namespace Defender_Cab_Verification_Tool
             this.securityCenterToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.feedbackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.githubToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.defenderToolMDLForumsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnVerifyFile = new System.Windows.Forms.Button();
             this.btnVerify = new System.Windows.Forms.Button();
             this.statusStrip.SuspendLayout();
@@ -160,6 +163,7 @@ namespace Defender_Cab_Verification_Tool
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileMenu,
             this.linksToolStripMenuItem,
+            this.feedbackToolStripMenuItem,
             this.helpMenu});
             this.menuStrip.Location = new System.Drawing.Point(0, 0);
             this.menuStrip.Name = "menuStrip";
@@ -227,6 +231,29 @@ namespace Defender_Cab_Verification_Tool
             this.aboutMenuItem.Text = "About";
             this.aboutMenuItem.Click += new System.EventHandler(this.AboutMenuItem_Click_1);
             // 
+            // feedbackToolStripMenuItem
+            // 
+            this.feedbackToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.githubToolStripMenuItem,
+            this.defenderToolMDLForumsToolStripMenuItem});
+            this.feedbackToolStripMenuItem.Name = "feedbackToolStripMenuItem";
+            this.feedbackToolStripMenuItem.Size = new System.Drawing.Size(86, 24);
+            this.feedbackToolStripMenuItem.Text = "Feedback";
+            // 
+            // githubToolStripMenuItem
+            // 
+            this.githubToolStripMenuItem.Name = "githubToolStripMenuItem";
+            this.githubToolStripMenuItem.Size = new System.Drawing.Size(284, 26);
+            this.githubToolStripMenuItem.Text = "Github";
+            this.githubToolStripMenuItem.Click += new System.EventHandler(this.githubToolStripMenuItem_Click);
+            // 
+            // defenderToolMDLForumsToolStripMenuItem
+            // 
+            this.defenderToolMDLForumsToolStripMenuItem.Name = "defenderToolMDLForumsToolStripMenuItem";
+            this.defenderToolMDLForumsToolStripMenuItem.Size = new System.Drawing.Size(284, 26);
+            this.defenderToolMDLForumsToolStripMenuItem.Text = "Defender Tool (MDL Forums)";
+            this.defenderToolMDLForumsToolStripMenuItem.Click += new System.EventHandler(this.defenderToolMDLForumsToolStripMenuItem_Click);
+            // 
             // btnVerifyFile
             // 
             this.btnVerifyFile.Location = new System.Drawing.Point(12, 30);
@@ -264,7 +291,7 @@ namespace Defender_Cab_Verification_Tool
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Defender CAB Verification Tool v3.0.29700.0 x64";
+            this.Text = "Defender CAB Verification Tool v3.0.29704.0 x64";
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
             this.menuStrip.ResumeLayout(false);
@@ -282,6 +309,9 @@ namespace Defender_Cab_Verification_Tool
         private ToolStripMenuItem securityCenterToolStripMenuItem;
         private EventHandler securityCenterToolStripMenuItem_Click;
         private Button btnVerify;
+        private ToolStripMenuItem feedbackToolStripMenuItem;
+        private ToolStripMenuItem githubToolStripMenuItem;
+        private ToolStripMenuItem defenderToolMDLForumsToolStripMenuItem;
     }
 }
 

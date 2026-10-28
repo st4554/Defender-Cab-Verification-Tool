@@ -1,5 +1,4 @@
 ﻿using System;
-
 using System.Windows.Forms;
 using System.Drawing;
 using System.IO;
@@ -254,7 +253,7 @@ namespace Defender_Cab_Verification_Tool
             item.SubItems.Add(result.ErrorDetail ?? string.Empty);
             item.ForeColor = result.IsValid ? Color.DarkGreen : Color.DarkRed;
             listViewResults.Items.Add(item);
-            
+
             // Sort by architecture after adding
             SortListViewByArchitecture();
             listViewResults.EnsureVisible(listViewResults.Items.Count - 1);
@@ -264,20 +263,20 @@ namespace Defender_Cab_Verification_Tool
         {
             // Disable redraw during sorting for performance
             listViewResults.BeginUpdate();
-            
+
             var items = listViewResults.Items.Cast<ListViewItem>().ToList();
-            
+
             // Sort by architecture priority, then by filename
             var sorted = items.OrderBy(item => GetArchitecturePriority(item.SubItems[1].Text))
                               .ThenBy(item => item.SubItems[1].Text)
                               .ToList();
-            
+
             listViewResults.Items.Clear();
             foreach (var item in sorted)
             {
                 listViewResults.Items.Add(item);
             }
-            
+
             listViewResults.EndUpdate();
         }
 
@@ -290,7 +289,7 @@ namespace Defender_Cab_Verification_Tool
                 return 2; // x64 second
             else if (filePath.Contains("\\arm64\\") || filePath.Contains("/arm64/"))
                 return 3; // arm64 third
-            
+
             return 99; // unknown last
         }
 
@@ -560,9 +559,27 @@ namespace Defender_Cab_Verification_Tool
                 UseShellExecute = true
             });
         }
+
+        private void githubToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://github.com/st4554/Defender-Cab-Verification-Tool",
+                UseShellExecute = true
+            });
+        }
+
+        private void defenderToolMDLForumsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://forums.mydigitallife.net/threads/defender-cab-verification-tool-v3-0.90539/",
+                UseShellExecute = true
+            });
+        }
     }
 
-    internal static class ProcessStartHelper
+        internal static class ProcessStartHelper
     {
         internal static void OpenFolder(string path)
         {
