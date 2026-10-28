@@ -12,6 +12,7 @@ A small Windows desktop utility that verifies the digital signatures of files co
 - Per-file results shown in the UI and exportable to CSV.
 - Generates timestamped logs in the `logs` folder.
 - Added Website links for Microsoft Defender Anti-Virus Definitions*, Platform Updates and Security Center**.
+- Added Website links for Feedback and Bug report purposes
 - Now will only extract defender cabs, non-defender cabs will not be verified anymore.
 
 *Will download the latest available definition exe file.
