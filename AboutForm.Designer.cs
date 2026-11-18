@@ -70,9 +70,9 @@ namespace Defender_Cab_Verification_Tool
             this.lblBuild.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblBuild.Location = new System.Drawing.Point(12, 147);
             this.lblBuild.Name = "lblBuild";
-            this.lblBuild.Size = new System.Drawing.Size(203, 25);
+            this.lblBuild.Size = new System.Drawing.Size(106, 25);
             this.lblBuild.TabIndex = 5;
-            this.lblBuild.Text = "Build: Stable Release ";
+            this.lblBuild.Text = "Build: Beta";
             // 
             // AboutForm
             // 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System;
 using System.Windows.Forms;
 using System.Drawing;
 using System.IO;
@@ -24,6 +25,24 @@ namespace Defender_Cab_Verification_Tool
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
+
+            // Apply theme based on saved preference or system default
+            var savedTheme = ThemeManager.LoadThemePreference();
+            ThemeManager.ThemeMode themeToApply;
+
+            if (savedTheme.HasValue)
+            {
+                // Use the saved preference
+                themeToApply = savedTheme.Value;
+            }
+            else
+            {
+                // No saved preference - use system default
+                themeToApply = ThemeManager.GetSystemTheme();
+            }
+
+            // Apply the theme (this also updates the cached _currentTheme)
+            ThemeManager.ApplyTheme(this, themeToApply);
 
             try
             {
@@ -251,7 +270,34 @@ namespace Defender_Cab_Verification_Tool
             item.SubItems.Add(result.FilePath);
             item.SubItems.Add(result.Thumbprint ?? string.Empty);
             item.SubItems.Add(result.ErrorDetail ?? string.Empty);
-            item.ForeColor = result.IsValid ? Color.DarkGreen : Color.DarkRed;
+
+            // Use theme-aware colors
+            if (result.IsValid)
+            {
+                item.ForeColor = ThemeManager.GetCurrentTheme() == ThemeManager.ThemeMode.Dark 
+                    ? Color.LimeGreen 
+                    : Color.DarkGreen;
+            }
+            else
+            {
+                item.ForeColor = ThemeManager.GetCurrentTheme() == ThemeManager.ThemeMode.Dark
+                    ? Color.LightCoral
+                    : Color.DarkRed;
+            }
+
+            if (result.IsValid)
+            {
+                item.ForeColor = ThemeManager.GetCurrentTheme() == ThemeManager.ThemeMode.Light
+                    ? Color.DarkGreen
+                    : Color.LimeGreen;
+            }
+            else
+            {
+                item.ForeColor = ThemeManager.GetCurrentTheme() == ThemeManager.ThemeMode.Light
+                    ? Color.DarkRed
+                    : Color.LightCoral;
+            }
+
             listViewResults.Items.Add(item);
 
             // Sort by architecture after adding
@@ -309,6 +355,7 @@ namespace Defender_Cab_Verification_Tool
         {
             using (var about = new AboutForm())
             {
+                ThemeManager.ApplyTheme(about, ThemeManager.GetCurrentTheme());
                 about.ShowDialog(this);
             }
         }
@@ -577,9 +624,42 @@ namespace Defender_Cab_Verification_Tool
                 UseShellExecute = true
             });
         }
+
+        private void lightToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ThemeManager.SaveThemePreference(ThemeManager.ThemeMode.Light);
+            ThemeManager.ApplyTheme(this, ThemeManager.ThemeMode.Light);
+        }
+
+        private void darkToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ThemeManager.SaveThemePreference(ThemeManager.ThemeMode.Dark);
+            ThemeManager.ApplyTheme(this, ThemeManager.ThemeMode.Dark);
+        }
+
+        private void systemDefaultToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Delete the preference file to use system default
+            try
+            {
+                var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "theme.cfg");
+                if (File.Exists(configPath))
+                {
+                    File.Delete(configPath);
+                }
+            }
+            catch
+            {
+                // Silently ignore deletion failure
+            }
+
+            // Apply the system theme
+            var systemTheme = ThemeManager.GetSystemTheme();
+            ThemeManager.ApplyTheme(this, systemTheme);
+        }
     }
 
-        internal static class ProcessStartHelper
+    internal static class ProcessStartHelper
     {
         internal static void OpenFolder(string path)
         {

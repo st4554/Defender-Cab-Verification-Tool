@@ -46,15 +46,19 @@ namespace Defender_Cab_Verification_Tool
             this.menuStrip = new System.Windows.Forms.MenuStrip();
             this.fileMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.exitMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.themesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.lightToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.darkToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.systemDefaultToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.linksToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.antiVirusDefinitionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.platformUpdatesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.securityCenterToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.helpMenu = new System.Windows.Forms.ToolStripMenuItem();
-            this.aboutMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.feedbackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.githubToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.defenderToolMDLForumsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.aboutMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.btnVerifyFile = new System.Windows.Forms.Button();
             this.btnVerify = new System.Windows.Forms.Button();
             this.statusStrip.SuspendLayout();
@@ -139,7 +143,7 @@ namespace Defender_Cab_Verification_Tool
             // colThumbprint
             // 
             this.colThumbprint.Text = "File Hash (SHA-1)";
-            this.colThumbprint.Width = 400;
+            this.colThumbprint.Width = 496;
             // 
             // statusStrip
             // 
@@ -162,6 +166,7 @@ namespace Defender_Cab_Verification_Tool
             this.menuStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileMenu,
+            this.themesToolStripMenuItem,
             this.linksToolStripMenuItem,
             this.feedbackToolStripMenuItem,
             this.helpMenu});
@@ -184,6 +189,37 @@ namespace Defender_Cab_Verification_Tool
             this.exitMenuItem.Size = new System.Drawing.Size(116, 26);
             this.exitMenuItem.Text = "Exit";
             this.exitMenuItem.Click += new System.EventHandler(this.ExitMenuItem_Click);
+            // 
+            // themesToolStripMenuItem
+            // 
+            this.themesToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.lightToolStripMenuItem,
+            this.darkToolStripMenuItem,
+            this.systemDefaultToolStripMenuItem});
+            this.themesToolStripMenuItem.Name = "themesToolStripMenuItem";
+            this.themesToolStripMenuItem.Size = new System.Drawing.Size(74, 24);
+            this.themesToolStripMenuItem.Text = "Themes";
+            // 
+            // lightToolStripMenuItem
+            // 
+            this.lightToolStripMenuItem.Name = "lightToolStripMenuItem";
+            this.lightToolStripMenuItem.Size = new System.Drawing.Size(192, 26);
+            this.lightToolStripMenuItem.Text = "Light";
+            this.lightToolStripMenuItem.Click += new System.EventHandler(this.lightToolStripMenuItem_Click);
+            // 
+            // darkToolStripMenuItem
+            // 
+            this.darkToolStripMenuItem.Name = "darkToolStripMenuItem";
+            this.darkToolStripMenuItem.Size = new System.Drawing.Size(192, 26);
+            this.darkToolStripMenuItem.Text = "Dark";
+            this.darkToolStripMenuItem.Click += new System.EventHandler(this.darkToolStripMenuItem_Click);
+            // 
+            // systemDefaultToolStripMenuItem
+            // 
+            this.systemDefaultToolStripMenuItem.Name = "systemDefaultToolStripMenuItem";
+            this.systemDefaultToolStripMenuItem.Size = new System.Drawing.Size(192, 26);
+            this.systemDefaultToolStripMenuItem.Text = "System Default";
+            this.systemDefaultToolStripMenuItem.Click += new System.EventHandler(this.systemDefaultToolStripMenuItem_Click);
             // 
             // linksToolStripMenuItem
             // 
@@ -216,21 +252,6 @@ namespace Defender_Cab_Verification_Tool
             this.securityCenterToolStripMenuItem.Text = "Security Center";
             this.securityCenterToolStripMenuItem.Click += new System.EventHandler(this.securityCenterToolStripMenuItem_Click_1);
             // 
-            // helpMenu
-            // 
-            this.helpMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.aboutMenuItem});
-            this.helpMenu.Name = "helpMenu";
-            this.helpMenu.Size = new System.Drawing.Size(55, 24);
-            this.helpMenu.Text = "Help";
-            // 
-            // aboutMenuItem
-            // 
-            this.aboutMenuItem.Name = "aboutMenuItem";
-            this.aboutMenuItem.Size = new System.Drawing.Size(133, 26);
-            this.aboutMenuItem.Text = "About";
-            this.aboutMenuItem.Click += new System.EventHandler(this.AboutMenuItem_Click_1);
-            // 
             // feedbackToolStripMenuItem
             // 
             this.feedbackToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -253,6 +274,21 @@ namespace Defender_Cab_Verification_Tool
             this.defenderToolMDLForumsToolStripMenuItem.Size = new System.Drawing.Size(284, 26);
             this.defenderToolMDLForumsToolStripMenuItem.Text = "Defender Tool (MDL Forums)";
             this.defenderToolMDLForumsToolStripMenuItem.Click += new System.EventHandler(this.defenderToolMDLForumsToolStripMenuItem_Click);
+            // 
+            // helpMenu
+            // 
+            this.helpMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.aboutMenuItem});
+            this.helpMenu.Name = "helpMenu";
+            this.helpMenu.Size = new System.Drawing.Size(55, 24);
+            this.helpMenu.Text = "Help";
+            // 
+            // aboutMenuItem
+            // 
+            this.aboutMenuItem.Name = "aboutMenuItem";
+            this.aboutMenuItem.Size = new System.Drawing.Size(133, 26);
+            this.aboutMenuItem.Text = "About";
+            this.aboutMenuItem.Click += new System.EventHandler(this.AboutMenuItem_Click_1);
             // 
             // btnVerifyFile
             // 
@@ -291,7 +327,7 @@ namespace Defender_Cab_Verification_Tool
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Defender CAB Verification Tool v3.0.29704.0 x64";
+            this.Text = "Defender CAB Verification Tool v4.0.1000.0 x64 (Beta)";
             this.statusStrip.ResumeLayout(false);
             this.statusStrip.PerformLayout();
             this.menuStrip.ResumeLayout(false);
@@ -312,6 +348,10 @@ namespace Defender_Cab_Verification_Tool
         private ToolStripMenuItem feedbackToolStripMenuItem;
         private ToolStripMenuItem githubToolStripMenuItem;
         private ToolStripMenuItem defenderToolMDLForumsToolStripMenuItem;
+        private ToolStripMenuItem themesToolStripMenuItem;
+        private ToolStripMenuItem lightToolStripMenuItem;
+        private ToolStripMenuItem darkToolStripMenuItem;
+        private ToolStripMenuItem systemDefaultToolStripMenuItem;
     }
 }
 
