@@ -1,6 +1,6 @@
 # Defender Cab Verification Tool
 
-<img width="1798" height="821" alt="Screenshot 2026-10-15 165848" src="https://github.com/user-attachments/assets/ce2ff488-8b85-4add-8afe-3506870b42cd" />
+<img width="1798" height="821" alt="Beta v4.0" src="https://github.com/user-attachments/assets/8d531ed2-538e-4f0f-ba04-827ed2a4c463" />
 
 A small Windows desktop utility that verifies the digital signatures of files contained inside Microsoft Defender CAB packages (files named like `defender-dism-*.cab`). The tool expands CAB archives, walks through the extracted files, and uses native WinTrust checks to report whether each file is signed and whether its signature is valid.
 
@@ -14,6 +14,7 @@ A small Windows desktop utility that verifies the digital signatures of files co
 - Added Website links for Microsoft Defender Anti-Virus Definitions*, Platform Updates and Security Center**.
 - Added Website links for Feedback and Bug report purposes
 - Now will only extract defender cabs, non-defender cabs will not be verified anymore.
+- Now supports Themes for Dark and Light modes, but will default to system settings currently in use on PC.
 
 *Will download the latest available definition exe file.
 
